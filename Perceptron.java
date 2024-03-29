@@ -3,13 +3,25 @@
  * Copyright (c) 2024 Marcus A. Maloof.  All Rights Reserved.  See LICENSE.
  */
 
-public class Perceptron extends Classifier {
+import java.util.ArrayList;
 
-  // data members
+public class Perceptron extends Classifier {
+  
+  protected double learningRate = 0.9;
+  protected int maxEpochs = 50000;
+  protected double threshold = 0.0;
+  protected ArrayList<Double> weights = new ArrayList<>();
 
   // methods inherited from Classifier
 
-  // other methods as you see fit
+  @Override
+  public double classify( ArrayList<Double> example ) throws Exception{
+    double predicted_label = 0.0;
+    for (int i = 0 ; i < example.size(); i++) {
+      predicted_label += example.get(i) * weights.get(i);
+    }
+    return predicted_label;
+  }
 
   /**
    * main needs to process the command-line arguments -p, -t, and -T.
