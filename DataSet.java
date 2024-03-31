@@ -40,8 +40,12 @@ public class DataSet extends ArrayList<ArrayList<Double> > {
     return sb.toString();
   }
 
-  public ArrayList<Double> getlabels() {
+  public ArrayList<Double> getLabels() {
     return labels;
+  }
+
+  public void addLabel(double label) {
+    labels.add(label);
   }
 
   public static void main(String[] args) throws Exception {
