@@ -50,7 +50,7 @@ public class DataSet extends ArrayList<ArrayList<Double> > {
 
   public static void main(String[] args) throws Exception {
     DataSet ds = new DataSet();
-    ds.load("xor.dta");
+    ds.load("monks1.tr.dta");
     System.out.println(ds.toString());
   }
 

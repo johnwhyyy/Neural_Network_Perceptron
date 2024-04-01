@@ -33,4 +33,28 @@ public abstract class Classifier {
 
   abstract public void train( DataSet ds ) throws Exception;
 
+  public double computeAccuracy(ArrayList<Double> actualLabels, ArrayList<Double> predictedLabels) {
+    if (actualLabels.size() != predictedLabels.size()) {
+        throw new IllegalArgumentException("The size of actual labels and predicted labels must be the same.");
+    }
+
+    double a = 0; // True Positives
+    double b = 0; // True Negatives
+    double c = 0; // False Positives
+    double d = 0; // False Negatives
+
+    for (int i = 0; i < actualLabels.size(); i++) {
+      if (actualLabels.get(i) == 1 && predictedLabels.get(i) == 1) {
+          a++; // Correctly predicted positive
+      } else if (actualLabels.get(i) == -1 && predictedLabels.get(i) == -1) {
+          b++; // Correctly predicted negative
+      } else if (actualLabels.get(i) == -1 && predictedLabels.get(i) == 1) {
+          c++; // Incorrectly predicted positive
+      } else if (actualLabels.get(i) == 1 && predictedLabels.get(i) == -1) {
+          d++; // Incorrectly predicted negative
+      }
+    }
+  return (a + b) / (a + b + c + d);
+}
+
 } // Classifier class

@@ -23,8 +23,6 @@ public class Perceptron extends Classifier {
     for (int i = 0 ; i < example.size(); i++) {
       predicted_label += example.get(i) * weights.get(i);
     }
-    // Add the contribution from the bias, which is the last weight[n] * 1
-    predicted_label += weights.get(weights.size() - 1);
     if (predicted_label > threshold) {
       return 1.0;
     }
@@ -43,120 +41,128 @@ public class Perceptron extends Classifier {
     return computeAccuracy(ds.getLabels(), predictedLabels);
   }
 
-  public double computeAccuracy(ArrayList<Double> actualLabels, ArrayList<Double> predictedLabels) {
-    if (actualLabels.size() != predictedLabels.size()) {
-        throw new IllegalArgumentException("The size of actual labels and predicted labels must be the same.");
-    }
-
-    double a = 0; // True Positives
-    double b = 0; // True Negatives
-    double c = 0; // False Positives
-    double d = 0; // False Negatives
-
-    for (int i = 0; i < actualLabels.size(); i++) {
-      if (actualLabels.get(i) == 1 && predictedLabels.get(i) == 1) {
-          a++; // Correctly predicted positive
-      } else if (actualLabels.get(i) == -1 && predictedLabels.get(i) == -1) {
-          b++; // Correctly predicted negative
-      } else if (actualLabels.get(i) == -1 && predictedLabels.get(i) == 1) {
-          c++; // Incorrectly predicted positive
-      } else if (actualLabels.get(i) == 1 && predictedLabels.get(i) == -1) {
-          d++; // Incorrectly predicted negative
-      }
-    }
-  return (a + b) / (a + b + c + d);
-}
-
-@Override
-public double holdOut(double p, DataSet ds) throws Exception {
-  // Calculate the size of the training set
-  int trainSize = (int) (ds.size() * p);
-        
-  // Split the dataset
-  DataSet trainingSet = new DataSet();
-  DataSet testingSet = new DataSet();
-  for (int i = 0; i < ds.size(); i++) {
-    if (i < trainSize) {
-            trainingSet.add(ds.get(i));
-    } 
-    else {
-      testingSet.add(ds.get(i));
-    }
-  }
-  Perceptron trainingModel = new Perceptron();
-  trainingModel.train(trainingSet);
-  return trainingModel.classify(testingSet); //return accuracy
-}
-
-@Override
-public void train(DataSet ds) throws Exception {
-  weights = new ArrayList<>(Collections.nCopies(ds.get(0).size() + 1, 0.0));// Initialize weights with an additional bias weight
-  boolean converged = false;
-  int epoch = 0;
-  while (!converged && epoch < maxEpochs){
-    converged = true;
+  @Override
+  public double holdOut(double p, DataSet ds) throws Exception {
+    // Calculate the size of the training set
+    int trainSize = (int) (ds.size() * p);
+          
+    // Split the dataset
+    DataSet trainingSet = new DataSet();
+    DataSet testingSet = new DataSet();
     for (int i = 0; i < ds.size(); i++) {
-     // Compute the dot product for all rows, bias is added at the end
-     double dotProduct = 0.0;
-     for (int j = 0; j < ds.get(i).size(); j++) {
-       dotProduct += ds.get(i).get(j) * weights.get(j);
-     }
-     // Adding the bias (which is the last weight, interacting with the implicit bias input of 1)
-     dotProduct += weights.get(weights.size() - 1);
-
-    if (dotProduct <= 0) {
-      for (int j = 0; j < ds.get(i).size(); j++) {
-          weights.set(j, weights.get(j) + learningRate * ds.get(i).get(j) * ds.getLabels().get(i));
-        }
-        converged = false;
+      if (i < trainSize) {
+              trainingSet.add(ds.get(i));
+      } 
+      else {
+        testingSet.add(ds.get(i));
       }
     }
-    epoch++;
+    Perceptron trainingModel = new Perceptron();
+    trainingModel.train(trainingSet);
+    return trainingModel.classify(testingSet); //return accuracy
   }
-}
 
-@Override
-public String toString() {
-  StringBuilder sb = new StringBuilder();
-  for (int i = 0; i < weights.size(); i++) {
-    sb.append("Weight ").append(i).append(": ").append(weights.get(i)).append("\n");
+  @Override
+  public void train(DataSet ds) throws Exception {
+    weights = new ArrayList<>(Collections.nCopies(ds.get(0).size(), 0.0));// Initialize weights
+    boolean converged = false;
+    int epoch = 0;
+    while (!converged && epoch < maxEpochs){
+      converged = true;
+      for (int i = 0; i < ds.size(); i++) {
+      // Compute the dot product for all rows
+      double dotProduct = 0.0;
+      for (int j = 0; j < ds.get(i).size(); j++) {
+        dotProduct += ds.get(i).get(j) * weights.get(j);
+      }
+
+      if (dotProduct <= 0) {
+        for (int j = 0; j < ds.get(i).size(); j++) {
+            weights.set(j, weights.get(j) + learningRate * ds.get(i).get(j) * ds.getLabels().get(i));
+          }
+          converged = false;
+        }
+      }
+      epoch++;
+    }
   }
-  return sb.toString();
-}
 
-public void setWeights(ArrayList<Double> weights) {
-  if (weights.size() != this.weights.size()) {
-    throw new IllegalArgumentException("The size of the weights must be the same as the size of the weights of the model.");
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < weights.size(); i++) {
+      sb.append("Weight ").append(i).append(": ").append(weights.get(i)).append("\n");
+    }
+    return sb.toString();
   }
-  this.weights = weights;
-}
 
-public ArrayList<Double> getWeights() {
-  return weights;
-}
+  public void setWeights(ArrayList<Double> weights) {
+    if (weights.size() != this.weights.size()) {
+      throw new IllegalArgumentException("The size of the weights must be the same as the size of the weights of the model.");
+    }
+    this.weights = weights;
+  }
+
+  public ArrayList<Double> getWeights() {
+    return weights;
+  }
 
   /**
    * main needs to process the command-line arguments -p, -t, and -T.
    * The application logic is specified in the assignment's prompt.
    */
 
-  public static void main( String args[] ) {
-    try {
-      // One use case: train and test on the same examples.
-      DataSet ds = new DataSet();
-      ds.load("mushroom.dta");
+  public static void main(String[] args) throws Exception {
+    args = new String[]{"-t", "monks1.tr.dta", "-T", "monks1.te.dta"};
+    String trainingFileName = null;
+    String testingFileName = null;
+    Double p = null;
+    Double accuracy =null;
+
+    //parse command line arguments
+    for (int i = 0; i < args.length; i++){
+      switch (args[i]){
+        case "-t":
+          trainingFileName = args[++i];
+          break;
+        case "-T":
+          testingFileName = args[++i];
+          break;
+        case "-p":
+          p = Double.parseDouble(args[++i]);
+          break;
+      }
+    }
+    try{
+      DataSet traingDataSet = new DataSet();
+      DataSet testingDataSet = new DataSet();
+      traingDataSet.load(trainingFileName);
       Perceptron perceptron = new Perceptron();
-      perceptron.train(ds);
-      double accuracy = perceptron.classify(ds);
+      //Case 2: have a training file and a testing file
+      if (testingFileName != null){
+        testingDataSet.load(testingFileName);
+        perceptron.train(testingDataSet);
+        accuracy = perceptron.classify(testingDataSet);
+      }
+      //Case 3: Provide training file and training proportion p 
+      else if (p != null){
+        accuracy = perceptron.holdOut(p,traingDataSet);
+      }
+      //Case 1: trian and classify on trianing data set
+      else{
+        perceptron.train(traingDataSet);
+        accuracy = perceptron.classify(traingDataSet);
+      }
       System.out.println( "Accuracy: " + accuracy );
-    } // try
+    }
     catch ( FailedToConvergeException e ) {
-      System.out.println( "Failed to converge!" );
-    } // catch
+        System.out.println( "Failed to converge!" );
+      } // catch
     catch ( Exception e ) {
       System.err.println( e.getMessage() );
       e.printStackTrace();
     } // catch
-  } // Perceptron::main
+
+  }
 
 } // Perceptron class
