@@ -54,7 +54,7 @@ public abstract class Classifier {
           d++; // Incorrectly predicted negative
       }
     }
-  return (a + b) / (a + b + c + d);
-}
+    return (a + b) / (a + b + c + d);
+  }
 
 } // Classifier class

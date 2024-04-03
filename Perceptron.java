@@ -59,15 +59,14 @@ public class Perceptron extends Classifier {
         testingSet.addLabel(ds.getLabels().get(i));
       }
     }
-    Perceptron trainingModel = new Perceptron();
-    trainingModel.train(trainingSet);
-    return trainingModel.classify(testingSet); //return accuracy
+    train(trainingSet);
+    return classify(testingSet); //return accuracy
   }
 
   @Override
   public void train(DataSet ds) throws Exception {
     int epoch = 0;
-    weights = new ArrayList<>(Collections.nCopies(ds.get(0).size(), 0.0));// Initialize weights
+    weights = new ArrayList<Double>(Collections.nCopies(ds.get(0).size(), 0.0)); // Initialize weights
     boolean converged = false;
     
     while (!converged && epoch < maxEpochs){
@@ -78,15 +77,19 @@ public class Perceptron extends Classifier {
         for (int j = 0; j < ds.get(i).size(); j++) {
           dotProduct += ds.get(i).get(j) * weights.get(j);
         }
+        double y = dotProduct * ds.getLabels().get(i);
         //adjust the weights
-        if (dotProduct <= 0) {
+        if (y <= 0) {
           for (int j = 0; j < ds.get(i).size(); j++) {
-              weights.set(j, weights.get(j) + eta * ds.get(i).get(j) * ds.getLabels().get(i));
+            weights.set(j, weights.get(j) + eta * ds.get(i).get(j) * ds.getLabels().get(i));
           }
           converged = false;
         }
       }
       epoch++;
+    }
+    if (epoch == maxEpochs) {
+      throw new FailedToConvergeException();
     }
   }
 
@@ -116,8 +119,13 @@ public class Perceptron extends Classifier {
    */
 
   public static void main(String[] args) throws Exception {
-    //args = new String[]{"-t", "monks2.te.dta", "-T", "monks2.te.dta"};
-    args = new String[]{"-t", "mushroom.dta", "-p", "0.5"};
+    for (int i = 0; i < args.length; i++) {
+      System.out.println(args[i]);
+    }
+    //args = new String[]{"-t", "mushroom.dta"};
+    //args = new String[]{"-t", "monks1.tr.dta", "-T", "monks1.te.dta"};
+    //args = new String[]{"-t", "mushroom.dta", "-p", "0.9"};
+    //args = new String[]{"-t", "xor.dta"};
     String trainingFileName = null;
     String testingFileName = null;
     Double p = null;
@@ -152,11 +160,13 @@ public class Perceptron extends Classifier {
       else if (p != null){
         accuracy = perceptron.holdOut(p,traingDataSet);
       }
-      //Case 1: trian and classify on trianing data set
+      //Case 1: train and classify on the same data set
       else{
+        testingDataSet.load(trainingFileName);
         perceptron.train(traingDataSet);
-        accuracy = perceptron.classify(traingDataSet);
+        accuracy = perceptron.classify(testingDataSet);
       }
+      System.out.println( perceptron.toString() );
       System.out.println( "Accuracy: " + accuracy );
     }
     catch ( FailedToConvergeException e ) {

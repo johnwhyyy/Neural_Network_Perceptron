@@ -12,7 +12,7 @@ public class BP extends Classifier {
   private double eta; //learning rate
   private double lambda; //parameter for sigmoid transform function
   private int I; // Number of input neurons including bias
-  private int J; // Number of hidden neurons including bias
+  private static int J; // Number of hidden neurons including bias
   private int K; // Number of output neurons
   private double[][] V; // Weights from input to hidden layer
   private double[][] W; // Weights from hidden to output layer
@@ -100,6 +100,9 @@ public class BP extends Classifier {
       }
       if (E < E_min) {
         break;
+      }
+      if (q == maxEpochs) {
+        throw new FailedToConvergeException();
       }
     }
   }
@@ -225,6 +228,7 @@ public class BP extends Classifier {
     return sb.toString();
   } // BP::toString
 
+
   /**
    * main needs to process the command-line arguments -J, -p, -t, and -T.
    * The application logic is specified in the assignment's prompt.
@@ -232,19 +236,59 @@ public class BP extends Classifier {
    */
 
   public static void main( String args[] ) {
-    try {
-      double accuracy = 0.0;
+    //args = new String[]{"-t","xor.dta", "-J", "4"};
+    //args = new String[]{"-t", "monks1.tr.dta", "-T", "monks1.te.dta", "-J", "4"};
+    //args = new String[]{"-t", "votes.dta", "-p", "0.8", "-J", "4"};
+    //args = new String[]{"-t", "sonar.dta", "-J", "4"};
+    //args = new String[]{"-t", "mushroom.dta", "-J", "4", "-p", "0.8"};
+    String trainingFileName = null;
+    String testingFileName = null;
+    Double p = null;
+    Double accuracy = null;
+
+    //parse command line arguments
+    for (int i = 0; i < args.length; i++){
+      switch (args[i]){
+        case "-t":
+          trainingFileName = args[++i];
+          break;
+        case "-T":
+          testingFileName = args[++i];
+          break;
+        case "-p":
+          p = Double.parseDouble(args[++i]);
+          break;
+        case "-J":
+          J =(Integer.parseInt(args[++i]));
+          break;
+      }
+    }
+    try{
+      DataSet traingDataSet = new DataSet();
+      DataSet testingDataSet = new DataSet();
+      traingDataSet.load(trainingFileName);
       BP bp = new BP();
-      DataSet ds = new DataSet();
-      ds.load("monks1.tr.dta");
-      DataSet ds_test = new DataSet();
-      ds_test.load("monks1.te.dta");
-      bp.setJ( 3 );
-      bp.train( ds );
-      accuracy = bp.classify( ds );
-      System.out.println(bp.toString());
-      System.out.println( "accuracy: " + accuracy );
-    } // try
+      //Case 2: have a training file and a testing file
+      if (testingFileName != null){
+        testingDataSet.load(testingFileName);
+        bp.train(testingDataSet);
+        accuracy = bp.classify(testingDataSet);
+      }
+      //Case 3: Provide training file and training proportion p 
+      else if (p != null){
+        accuracy = bp.holdOut(p,traingDataSet);
+      }
+      //Case 1: train and classify on trianing data set
+      else{
+        bp.train(traingDataSet);
+        accuracy = bp.classify(traingDataSet);
+      }
+      System.out.println( bp.toString());
+      System.out.println( "Accuracy: " + accuracy );
+    }
+    catch ( FailedToConvergeException e ) {
+        System.out.println( "Failed to converge!" );
+      } // catch
     catch ( Exception e ) {
       System.err.println( e.getMessage() );
       e.printStackTrace();
