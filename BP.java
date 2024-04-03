@@ -27,9 +27,10 @@ public class BP extends Classifier {
   @Override
   public double classify(ArrayList<Double> example) throws Exception {
     ArrayList<Double> predicted_h = computeHiddenLayerOutput(example);
-    double predicted_output = computeOutputLayerOutput(predicted_h);
-    
-    if (predicted_output > 0) {
+    ArrayList<Double> predicted_output = computeOutputLayerOutput(predicted_h);
+
+    // Return the class label with the highest value
+    if (predicted_output.get(0) > predicted_output.get(1)) {
       return 1.0;
     } 
     else {
@@ -49,29 +50,51 @@ public class BP extends Classifier {
 
   @Override
   public void train(DataSet ds) throws Exception {
-    int M = ds.size();
+    int M = ds.size(); //number of examples
     I = ds.get(0).size(); //number of inputs, inlcuding bias
-    K = 1; //output layer
+    K = 2; //output layer nubmer of neurons
+
+    //Convert labels to hot-one encoding
+    ArrayList<ArrayList<Double>> hotOneLabels = new ArrayList<>();
+    for (int i = 0; i < M; i++) {
+      if (ds.getLabels().get(i) == 1) {
+        hotOneLabels.add(new ArrayList<Double>(){{ add(1.0); add(0.0); }});
+      } 
+      else {
+        hotOneLabels.add(new ArrayList<Double>() {{ add(0.0); add(1.0); }});
+      }
+    }
+
     //Step 1: Initialize weights
     initializeVW();
     for (int q = 0; q < maxEpochs; q++) {
       double E = 0.0;
       for (int m = 0; m < M; m++) {
         ArrayList<Double> x = ds.get(m);
-        double y = ds.getLabels().get(m);
+        ArrayList<Double> y = hotOneLabels.get(m);
         //Step 2a: compute hidden layer output
         ArrayList<Double> h = computeHiddenLayerOutput(x);
         //Step 2b: compute output layer output
-        double output = computeOutputLayerOutput(h);
+        ArrayList<Double> output = computeOutputLayerOutput(h);
         //Step 3: compute error value
-        E += 0.5 * Math.pow(y - output, 2); 
+        for (int k = 0; k < K; k++) {
+          E += 0.5 * Math.pow(y.get(k) - output.get(k), 2);
+        }
         //Step 4a: compute error signal for output layer
-        double delta_output = (y - output) * output * (1 - output);
+        ArrayList<Double> delta_output = new ArrayList<>();
+        for (int k = 0; k < K; k++) {
+          delta_output.add((y.get(k) - output.get(k)) * output.get(k) * (1 - output.get(k)));
+        }
         //Step 4b: compute error signal for hidden layer
         ArrayList<Double> delta_hidden = new ArrayList<>();
         for (int j = 0; j < J; j++) {
-          delta_hidden.add(h.get(j) * (1 - h.get(j)) * W[0][j] * delta_output);
+          double sum = 0.0;
+          for (int k = 0; k < K; k++) {
+            sum += delta_output.get(k) * W[k][j];
+          }
+          delta_hidden.add(h.get(j) * (1 - h.get(j)) * sum);
         }
+        
         //Step 5 and 6: update weights
         updateWeights(x, h, delta_output, delta_hidden);
       }
@@ -97,7 +120,7 @@ public class BP extends Classifier {
         W[k][j] = min + (max - min) * random.nextDouble();
       }
     }
-  } // BP::Initialize
+  } // BP::InitializeVW
 
   public double sigmoid(double x) {
     return 1 / (1 + Math.exp(-lambda * x));
@@ -115,18 +138,24 @@ public class BP extends Classifier {
     return h;
   } // BP::computeHiddenLayerOutput
 
-  public double computeOutputLayerOutput(ArrayList<Double> h) {
-    double sum = 0.0;
-    for (int j = 0; j < J; j++) {
-      sum += h.get(j) * W[0][j];
+  public ArrayList<Double> computeOutputLayerOutput(ArrayList<Double> h) {
+    ArrayList<Double> output = new ArrayList<>();
+    for (int k = 0; k < K; k++) {
+      double sum = 0.0;
+      for (int j = 0; j < J; j++){
+        sum += h.get(j) * W[k][j];
+      }
+      output.add(sigmoid(sum));
     }
-    return sigmoid(sum);
+    return output;
   } // BP::computeOutputLayerOutput
 
-  public void updateWeights(ArrayList<Double> x, ArrayList<Double> h, double delta_output, ArrayList<Double> delta_hidden) {
+  public void updateWeights(ArrayList<Double> x, ArrayList<Double> h, ArrayList<Double> delta_output, ArrayList<Double> delta_hidden) {
     //Step 5: Adjust output layer weights
-    for (int j = 0; j < J; j++) {
-      W[0][j] += eta * delta_output * h.get(j);
+    for (int k = 0; k < K; k++) {
+      for (int j = 0; j < J; j++) {
+        W[k][j] += eta * delta_output.get(k) * h.get(j);
+      }
     }
 
     //Step 6: Adjust hidden layer weights
@@ -146,9 +175,11 @@ public class BP extends Classifier {
     for (int i = 0; i < ds.size(); i++) {
       if (i < trainingSize) {
         trainingSet.add(ds.get(i));
+        trainingSet.addLabel(ds.getLabels().get(i));
       } 
       else {
         testingSet.add(ds.get(i));
+        testingSet.addLabel(ds.getLabels().get(i));
       }
     }
     train(trainingSet);
@@ -174,20 +205,22 @@ public class BP extends Classifier {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("V = ");
+    sb.append("V =  \n");
     for (double[] row : V) {
+      sb.append("[ ");
       for (double val : row) {
         sb.append(String.format("%6.3f ", val));
       }
-      sb.append("\n");
+      sb.append(" ] \n");
     }
 
-    sb.append("\n W = ");
+    sb.append("\n W = \n");
     for (double[] row : W) {
+      sb.append("[ ");
       for (double val : row) {
         sb.append(String.format("%6.3f ", val));
       }
-      sb.append("\n");
+      sb.append(" ] \n");
     }
     return sb.toString();
   } // BP::toString
@@ -208,7 +241,7 @@ public class BP extends Classifier {
       ds_test.load("monks1.te.dta");
       bp.setJ( 3 );
       bp.train( ds );
-      accuracy = bp.classify( ds_test );
+      accuracy = bp.classify( ds );
       System.out.println(bp.toString());
       System.out.println( "accuracy: " + accuracy );
     } // try

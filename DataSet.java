@@ -35,7 +35,7 @@ public class DataSet extends ArrayList<ArrayList<Double> > {
   public String toString(){
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < this.size(); i++) {
-        sb.append("Data: ").append(this.get(i)).append(",label: ").append(labels.get(i)).append("\n");
+      sb.append("Data: ").append(this.get(i)).append(",label: ").append(labels.get(i)).append("\n");
     }
     return sb.toString();
   }

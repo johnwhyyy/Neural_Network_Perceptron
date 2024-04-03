@@ -10,7 +10,7 @@ import java.util.List;
 
 public class Perceptron extends Classifier {
   
-  protected double learningRate = 0.9;
+  protected double eta = 0.9;
   protected int maxEpochs = 50000;
   protected double threshold = 0.0;
   protected ArrayList<Double> weights = new ArrayList<>();
@@ -51,10 +51,12 @@ public class Perceptron extends Classifier {
     DataSet testingSet = new DataSet();
     for (int i = 0; i < ds.size(); i++) {
       if (i < trainSize) {
-              trainingSet.add(ds.get(i));
+        trainingSet.add(ds.get(i));
+        trainingSet.addLabel(ds.getLabels().get(i));
       } 
       else {
         testingSet.add(ds.get(i));
+        testingSet.addLabel(ds.getLabels().get(i));
       }
     }
     Perceptron trainingModel = new Perceptron();
@@ -64,21 +66,22 @@ public class Perceptron extends Classifier {
 
   @Override
   public void train(DataSet ds) throws Exception {
+    int epoch = 0;
     weights = new ArrayList<>(Collections.nCopies(ds.get(0).size(), 0.0));// Initialize weights
     boolean converged = false;
-    int epoch = 0;
+    
     while (!converged && epoch < maxEpochs){
       converged = true;
       for (int i = 0; i < ds.size(); i++) {
-      // Compute the dot product for all rows
-      double dotProduct = 0.0;
-      for (int j = 0; j < ds.get(i).size(); j++) {
-        dotProduct += ds.get(i).get(j) * weights.get(j);
-      }
-
-      if (dotProduct <= 0) {
+        // Compute the dot product for all rows
+        double dotProduct = 0.0;
         for (int j = 0; j < ds.get(i).size(); j++) {
-            weights.set(j, weights.get(j) + learningRate * ds.get(i).get(j) * ds.getLabels().get(i));
+          dotProduct += ds.get(i).get(j) * weights.get(j);
+        }
+        //adjust the weights
+        if (dotProduct <= 0) {
+          for (int j = 0; j < ds.get(i).size(); j++) {
+              weights.set(j, weights.get(j) + eta * ds.get(i).get(j) * ds.getLabels().get(i));
           }
           converged = false;
         }
@@ -113,7 +116,8 @@ public class Perceptron extends Classifier {
    */
 
   public static void main(String[] args) throws Exception {
-    args = new String[]{"-t", "monks1.tr.dta", "-T", "monks1.te.dta"};
+    //args = new String[]{"-t", "monks2.te.dta", "-T", "monks2.te.dta"};
+    args = new String[]{"-t", "mushroom.dta", "-p", "0.5"};
     String trainingFileName = null;
     String testingFileName = null;
     Double p = null;
