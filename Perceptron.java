@@ -119,13 +119,11 @@ public class Perceptron extends Classifier {
    */
 
   public static void main(String[] args) throws Exception {
-    for (int i = 0; i < args.length; i++) {
-      System.out.println(args[i]);
-    }
     //args = new String[]{"-t", "mushroom.dta"};
     //args = new String[]{"-t", "monks1.tr.dta", "-T", "monks1.te.dta"};
-    //args = new String[]{"-t", "mushroom.dta", "-p", "0.9"};
+    //args = new String[]{"-t", "mushroom.dta", "-p", "0.5"};
     //args = new String[]{"-t", "xor.dta"};
+    //args = new String[]{"-t", "votes.dta", "-p", "0.5"};
     String trainingFileName = null;
     String testingFileName = null;
     Double p = null;
